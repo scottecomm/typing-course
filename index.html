@@ -13,28 +13,46 @@
       <p class="tagline">Retro-style touch typing practice in your browser.</p>
     </header>
 
-    <section class="controls">
-      <div class="control-row">
-        <label for="lesson-select">Lesson:</label>
-        <select id="lesson-select">
-          <option value="home-row">Home Row – asdf jkl;</option>
-          <option value="home-row-words">Home Row – simple words</option>
-          <!-- You can add more lessons later -->
-        </select>
-        <button id="start-btn">Start lesson</button>
+    <!-- Learner profile -->
+    <section class="profile-panel">
+      <h2 class="section-title">Learner profile</h2>
+      <div class="profile-row">
+        <label for="learner-name">Name:</label>
+        <input id="learner-name" type="text" placeholder="e.g. Aidan" />
+        <label for="learner-age">Age:</label>
+        <input id="learner-age" type="number" min="5" max="120" placeholder="e.g. 9" />
+        <button id="save-profile-btn" type="button">Save profile</button>
       </div>
-      <p class="hint">
-        Press <span class="key-cap">Start lesson</span>, then begin typing in the box below.
+      <p id="profile-summary" class="profile-summary">
+        No learner saved yet.
       </p>
     </section>
 
+    <!-- Lesson controls -->
+    <section class="controls">
+      <h2 class="section-title">Lessons</h2>
+      <div class="control-row">
+        <label for="lesson-select">Choose lesson:</label>
+        <select id="lesson-select">
+          <!-- Filled by JavaScript -->
+        </select>
+        <button id="start-btn" type="button">Start lesson</button>
+      </div>
+      <p class="hint">
+        Lessons unlock when you finish the previous one with <strong>100% accuracy</strong>.
+      </p>
+    </section>
+
+    <!-- Lesson text -->
     <section class="lesson-panel">
-      <h2 id="lesson-title">Home Row – asdf jkl;</h2>
+      <h2 id="lesson-title">Lesson</h2>
+      <p id="lesson-desc" class="lesson-desc"></p>
       <div id="target-text" class="target-text">
         <!-- Filled by JavaScript -->
       </div>
     </section>
 
+    <!-- Typing input -->
     <section class="typing-panel">
       <label for="typing-input" class="typing-label">Type here:</label>
       <textarea
@@ -49,6 +67,7 @@
       ></textarea>
     </section>
 
+    <!-- Live feedback -->
     <section class="feedback-panel">
       <h3>Live feedback</h3>
       <div id="live-feedback" class="live-feedback">
@@ -56,6 +75,7 @@
       </div>
     </section>
 
+    <!-- Stats -->
     <section class="stats-panel">
       <h3>Stats</h3>
       <div class="stats-grid">
@@ -82,7 +102,7 @@
         <span class="key-cap">J K L ;</span> keys.
       </p>
       <p class="small-print">
-        Inspired by classic touch typing tutors – rebuilt for the browser.
+        Lessons build up from single keys to full sentences, just like the classic tutors.
       </p>
     </footer>
   </div>
