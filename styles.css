@@ -186,6 +186,7 @@ textarea#typing-input {
   padding: 8px;
   resize: vertical;
   min-height: 70px;
+  font-size: 1rem;
 }
 
 textarea#typing-input:disabled {
