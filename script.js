@@ -125,370 +125,397 @@ const lessons = {
   }
 };
 
-// -------- DOM elements --------------------------------------------------
-const lessonSelect = document.getElementById("lesson-select");
-const startBtn = document.getElementById("start-btn");
-const lessonTitleEl = document.getElementById("lesson-title");
-const lessonDescEl = document.getElementById("lesson-desc");
-const targetTextEl = document.getElementById("target-text");
-const typingInput = document.getElementById("typing-input");
-const liveFeedbackEl = document.getElementById("live-feedback");
-const statAccuracyEl = document.getElementById("stat-accuracy");
-const statWpmEl = document.getElementById("stat-wpm");
-const statTimeEl = document.getElementById("stat-time");
-const completionMessageEl = document.getElementById("completion-message");
+// Run everything after the DOM is fully loaded (helps Safari)
+document.addEventListener("DOMContentLoaded", function () {
+  // -------- DOM elements ------------------------------------------------
+  const lessonSelect = document.getElementById("lesson-select");
+  const startBtn = document.getElementById("start-btn");
+  const lessonTitleEl = document.getElementById("lesson-title");
+  const lessonDescEl = document.getElementById("lesson-desc");
+  const targetTextEl = document.getElementById("target-text");
+  const typingInput = document.getElementById("typing-input");
+  const liveFeedbackEl = document.getElementById("live-feedback");
+  const statAccuracyEl = document.getElementById("stat-accuracy");
+  const statWpmEl = document.getElementById("stat-wpm");
+  const statTimeEl = document.getElementById("stat-time");
+  const completionMessageEl = document.getElementById("completion-message");
 
-// Profile
-const learnerNameInput = document.getElementById("learner-name");
-const learnerAgeInput = document.getElementById("learner-age");
-const saveProfileBtn = document.getElementById("save-profile-btn");
-const profileSummaryEl = document.getElementById("profile-summary");
+  // Profile
+  const learnerNameInput = document.getElementById("learner-name");
+  const learnerAgeInput = document.getElementById("learner-age");
+  const saveProfileBtn = document.getElementById("save-profile-btn");
+  const profileSummaryEl = document.getElementById("profile-summary");
 
-// -------- State ---------------------------------------------------------
-let currentLessonId = lessonOrder[0];
-let targetText = lessons[currentLessonId].text;
-let startTime = null;
-let finished = false;
-let lastAccuracy = 0;
-let lastWpm = 0;
+  // If something went really wrong and elements aren't there, bail
+  if (
+    !lessonSelect ||
+    !startBtn ||
+    !lessonTitleEl ||
+    !targetTextEl ||
+    !typingInput
+  ) {
+    console.warn("Typing trainer: required elements not found in DOM.");
+    return;
+  }
 
-// Progress + profile stored in localStorage
-const PROGRESS_KEY = "touchGoTypingProgressV1";
-const PROFILE_KEY = "touchGoTypingProfileV1";
+  // -------- State -------------------------------------------------------
+  let currentLessonId = lessonOrder[0];
+  let targetText = lessons[currentLessonId].text;
+  let startTime = null;
+  let finished = false;
+  let lastAccuracy = 0;
+  let lastWpm = 0;
 
-let progress = {
-  unlockedLessonIds: [lessonOrder[0]] // start with first lesson unlocked
-};
+  const PROGRESS_KEY = "touchGoTypingProgressV1";
+  const PROFILE_KEY = "touchGoTypingProfileV1";
 
-let profile = {
-  name: "",
-  age: null
-};
+  let progress = {
+    unlockedLessonIds: [lessonOrder[0]]
+  };
 
-// -------- Local storage helpers ----------------------------------------
-function loadProgress() {
-  try {
-    const raw = localStorage.getItem(PROGRESS_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed.unlockedLessonIds) && parsed.unlockedLessonIds.length) {
-      progress.unlockedLessonIds = parsed.unlockedLessonIds.filter((id) =>
-        lessonOrder.includes(id)
-      );
-      if (!progress.unlockedLessonIds.length) {
-        progress.unlockedLessonIds = [lessonOrder[0]];
+  let profile = {
+    name: "",
+    age: null
+  };
+
+  const storageAvailable =
+    typeof window !== "undefined" &&
+    typeof window.localStorage !== "undefined";
+
+  // -------- Local storage helpers --------------------------------------
+  function loadProgress() {
+    if (!storageAvailable) return;
+    try {
+      const raw = localStorage.getItem(PROGRESS_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (
+        parsed &&
+        Array.isArray(parsed.unlockedLessonIds) &&
+        parsed.unlockedLessonIds.length
+      ) {
+        progress.unlockedLessonIds = parsed.unlockedLessonIds.filter((id) =>
+          lessonOrder.includes(id)
+        );
+        if (!progress.unlockedLessonIds.length) {
+          progress.unlockedLessonIds = [lessonOrder[0]];
+        }
       }
+    } catch (e) {
+      console.warn("Could not load progress:", e);
     }
-  } catch (e) {
-    console.warn("Could not load progress:", e);
   }
-}
 
-function saveProgress() {
-  try {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-  } catch (e) {
-    console.warn("Could not save progress:", e);
-  }
-}
-
-function loadProfile() {
-  try {
-    const raw = localStorage.getItem(PROFILE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === "object") {
-      profile.name = parsed.name || "";
-      profile.age = typeof parsed.age === "number" ? parsed.age : null;
+  function saveProgress() {
+    if (!storageAvailable) return;
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
+    } catch (e) {
+      console.warn("Could not save progress:", e);
     }
-  } catch (e) {
-    console.warn("Could not load profile:", e);
   }
-}
 
-function saveProfile() {
-  try {
-    const toSave = {
-      name: profile.name || "",
-      age: typeof profile.age === "number" ? profile.age : null
-    };
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(toSave));
-  } catch (e) {
-    console.warn("Could not save profile:", e);
+  function loadProfile() {
+    if (!storageAvailable) return;
+    try {
+      const raw = localStorage.getItem(PROFILE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        profile.name = parsed.name || "";
+        profile.age =
+          typeof parsed.age === "number" && !isNaN(parsed.age)
+            ? parsed.age
+            : null;
+      }
+    } catch (e) {
+      console.warn("Could not load profile:", e);
+    }
   }
-}
 
-// -------- UI helpers ----------------------------------------------------
-function renderProfileSummary() {
-  if (profile.name && profile.age) {
-    profileSummaryEl.textContent = `Current learner: ${profile.name} (age ${profile.age})`;
-  } else if (profile.name) {
-    profileSummaryEl.textContent = `Current learner: ${profile.name}`;
-  } else {
-    profileSummaryEl.textContent = "No learner saved yet.";
+  function saveProfile() {
+    if (!storageAvailable) return;
+    try {
+      const toSave = {
+        name: profile.name || "",
+        age: typeof profile.age === "number" ? profile.age : null
+      };
+      localStorage.setItem(PROFILE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+      console.warn("Could not save profile:", e);
+    }
   }
-  learnerNameInput.value = profile.name || "";
-  learnerAgeInput.value = profile.age != null ? profile.age : "";
-}
 
-function renderLessonOptions() {
-  lessonSelect.innerHTML = "";
-  lessonOrder.forEach((lessonId, index) => {
-    const lesson = lessons[lessonId];
+  // -------- UI helpers --------------------------------------------------
+  function renderProfileSummary() {
+    if (profile.name && profile.age) {
+      profileSummaryEl.textContent = `Current learner: ${profile.name} (age ${profile.age})`;
+    } else if (profile.name) {
+      profileSummaryEl.textContent = `Current learner: ${profile.name}`;
+    } else {
+      profileSummaryEl.textContent = "No learner saved yet.";
+    }
+    learnerNameInput.value = profile.name || "";
+    learnerAgeInput.value = profile.age != null ? profile.age : "";
+  }
+
+  function renderLessonOptions() {
+    lessonSelect.innerHTML = "";
+    lessonOrder.forEach((lessonId, index) => {
+      const lesson = lessons[lessonId];
+      if (!lesson) return;
+
+      const option = document.createElement("option");
+      const unlocked = progress.unlockedLessonIds.includes(lessonId);
+
+      option.value = lessonId;
+      option.textContent = `${index + 1}. ${lesson.title}${
+        unlocked ? "" : " (locked)"
+      }`;
+      option.disabled = !unlocked;
+      lessonSelect.appendChild(option);
+    });
+
+    if (!progress.unlockedLessonIds.includes(currentLessonId)) {
+      currentLessonId = progress.unlockedLessonIds[0];
+    }
+    lessonSelect.value = currentLessonId;
+  }
+
+  function loadLesson(id) {
+    const lesson = lessons[id];
     if (!lesson) return;
 
-    const option = document.createElement("option");
-    const unlocked = progress.unlockedLessonIds.includes(lessonId);
+    currentLessonId = id;
+    targetText = lesson.text;
+    lessonTitleEl.textContent = lesson.title;
+    lessonDescEl.textContent = lesson.description || "";
+    targetTextEl.textContent = targetText;
 
-    option.value = lessonId;
-    option.textContent = `${index + 1}. ${lesson.title}${unlocked ? "" : " (locked)"}`;
-    option.disabled = !unlocked;
-    lessonSelect.appendChild(option);
-  });
-
-  // Ensure current selection is valid
-  if (!progress.unlockedLessonIds.includes(currentLessonId)) {
-    currentLessonId = progress.unlockedLessonIds[0];
-  }
-  lessonSelect.value = currentLessonId;
-}
-
-function loadLesson(id) {
-  const lesson = lessons[id];
-  if (!lesson) return;
-
-  currentLessonId = id;
-  targetText = lesson.text;
-  lessonTitleEl.textContent = lesson.title;
-  lessonDescEl.textContent = lesson.description || "";
-  targetTextEl.textContent = targetText;
-
-  resetSession();
-}
-
-function resetSession() {
-  typingInput.value = "";
-  typingInput.disabled = true;
-  liveFeedbackEl.innerHTML = "";
-  statAccuracyEl.textContent = "0%";
-  statWpmEl.textContent = "0";
-  statTimeEl.textContent = "0s";
-  completionMessageEl.textContent = "";
-  startTime = null;
-  finished = false;
-  lastAccuracy = 0;
-  lastWpm = 0;
-}
-
-function startLesson() {
-  resetSession();
-  typingInput.disabled = false;
-  typingInput.focus();
-  typingInput.maxLength = targetText.length;
-  // Show initial feedback with pending characters
-  liveFeedbackEl.innerHTML = renderFeedback("", targetText);
-}
-
-function updateStatsAndFeedback() {
-  const typed = typingInput.value;
-  const now = new Date();
-
-  if (!startTime && typed.length > 0) {
-    startTime = now;
+    resetSession();
   }
 
-  if (!typed.length) {
-    liveFeedbackEl.innerHTML = renderFeedback("", targetText);
+  function resetSession() {
+    typingInput.value = "";
+    typingInput.disabled = true;
+    liveFeedbackEl.innerHTML = "";
     statAccuracyEl.textContent = "0%";
     statWpmEl.textContent = "0";
     statTimeEl.textContent = "0s";
-    return;
+    completionMessageEl.textContent = "";
+    startTime = null;
+    finished = false;
+    lastAccuracy = 0;
+    lastWpm = 0;
   }
 
-  // Render coloured feedback
-  liveFeedbackEl.innerHTML = renderFeedback(typed, targetText);
-
-  // Calculate stats
-  const stats = calculateStats(typed, targetText, startTime, now);
-  lastAccuracy = stats.accuracy;
-  lastWpm = stats.wpm;
-
-  statAccuracyEl.textContent = `${stats.accuracy.toFixed(1)}%`;
-  statWpmEl.textContent = isFinite(stats.wpm) ? stats.wpm.toFixed(1) : "0";
-  statTimeEl.textContent = `${Math.round(stats.timeSeconds)}s`;
-
-  // Completion check
-  if (typed.length === targetText.length && !finished) {
-    finished = true;
-    typingInput.disabled = true;
-    handleLessonCompletion();
+  function startLesson() {
+    resetSession();
+    typingInput.disabled = false;
+    typingInput.focus();
+    typingInput.maxLength = targetText.length;
+    liveFeedbackEl.innerHTML = renderFeedback("", targetText);
   }
-}
 
-// Render expected text with colours based on what was typed
-function renderFeedback(typed, target) {
-  let html = "";
+  function updateStatsAndFeedback() {
+    const typed = typingInput.value;
+    const now = new Date();
 
-  for (let i = 0; i < target.length; i++) {
-    const expectedChar = target[i];
-    const typedChar = typed[i];
+    if (!startTime && typed.length > 0) {
+      startTime = now;
+    }
 
-    if (typedChar == null) {
-      html += `<span class="char-pending">${escapeHtml(expectedChar)}</span>`;
-    } else if (typedChar === expectedChar) {
-      html += `<span class="char-correct">${escapeHtml(expectedChar)}</span>`;
+    if (!typed.length) {
+      liveFeedbackEl.innerHTML = renderFeedback("", targetText);
+      statAccuracyEl.textContent = "0%";
+      statWpmEl.textContent = "0";
+      statTimeEl.textContent = "0s";
+      return;
+    }
+
+    liveFeedbackEl.innerHTML = renderFeedback(typed, targetText);
+
+    const stats = calculateStats(typed, targetText, startTime, now);
+    lastAccuracy = stats.accuracy;
+    lastWpm = stats.wpm;
+
+    statAccuracyEl.textContent = `${stats.accuracy.toFixed(1)}%`;
+    statWpmEl.textContent = isFinite(stats.wpm) ? stats.wpm.toFixed(1) : "0";
+    statTimeEl.textContent = `${Math.round(stats.timeSeconds)}s`;
+
+    if (typed.length === targetText.length && !finished) {
+      finished = true;
+      typingInput.disabled = true;
+      handleLessonCompletion();
+    }
+  }
+
+  function renderFeedback(typed, target) {
+    let html = "";
+
+    for (let i = 0; i < target.length; i++) {
+      const expectedChar = target[i];
+      const typedChar = typed[i];
+
+      if (typedChar == null) {
+        html += `<span class="char-pending">${escapeHtml(expectedChar)}</span>`;
+      } else if (typedChar === expectedChar) {
+        html += `<span class="char-correct">${escapeHtml(expectedChar)}</span>`;
+      } else {
+        html += `<span class="char-incorrect">${escapeHtml(expectedChar)}</span>`;
+      }
+    }
+
+    return html;
+  }
+
+  function calculateStats(typed, target, start, now) {
+    const totalTyped = typed.length;
+    let correctCount = 0;
+
+    for (let i = 0; i < totalTyped; i++) {
+      if (typed[i] === target[i]) {
+        correctCount++;
+      }
+    }
+
+    const accuracy = totalTyped ? (correctCount / totalTyped) * 100 : 0;
+
+    let timeSeconds = 0;
+    let wpm = 0;
+
+    if (start) {
+      timeSeconds = (now - start) / 1000;
+      const timeMinutes = timeSeconds / 60;
+      if (timeMinutes > 0) {
+        wpm = (totalTyped / 5) / timeMinutes;
+      }
+    }
+
+    return { accuracy, wpm, timeSeconds };
+  }
+
+  function escapeHtml(char) {
+    if (char === "<") return "&lt;";
+    if (char === ">") return "&gt;";
+    if (char === "&") return "&amp;";
+    return char;
+  }
+
+  // -------- Completion & progression ------------------------------------
+  function handleLessonCompletion() {
+    const lesson = lessons[currentLessonId];
+    const lessonIndex = lessonOrder.indexOf(currentLessonId);
+    const nextLessonId = lessonOrder[lessonIndex + 1] || null;
+
+    const message = buildPersonalisedFeedback(
+      profile.name,
+      profile.age,
+      lastAccuracy,
+      lastWpm,
+      lesson.title,
+      !!nextLessonId
+    );
+
+    completionMessageEl.textContent = message;
+
+    if (lastAccuracy >= 99.9 && nextLessonId) {
+      if (!progress.unlockedLessonIds.includes(nextLessonId)) {
+        progress.unlockedLessonIds.push(nextLessonId);
+        saveProgress();
+        renderLessonOptions();
+      }
+    }
+  }
+
+  function buildPersonalisedFeedback(
+    name,
+    age,
+    accuracy,
+    wpm,
+    lessonTitle,
+    hasNext
+  ) {
+    const roundedAcc = accuracy.toFixed(1);
+    const roundedWpm = isFinite(wpm) ? wpm.toFixed(1) : "0";
+
+    const ageNum = typeof age === "number" ? age : null;
+    let tone = "neutral";
+
+    if (ageNum != null) {
+      if (ageNum <= 12) tone = "child";
+      else if (ageNum <= 17) tone = "teen";
+      else tone = "adult";
+    }
+
+    const who = name ? name : "You";
+
+    if (accuracy >= 99.9) {
+      if (tone === "child") {
+        return `${who}, that was amazing! You finished “${lessonTitle}” with 100% accuracy and ${roundedWpm} WPM. You can move on to the next lesson now.`;
+      } else if (tone === "teen") {
+        return `Nice work, ${who}. 100% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. You’re ready for the next challenge.`;
+      } else if (tone === "adult") {
+        return `Excellent, ${who}. 100% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. Your touch-typing foundations are solid – the next lesson is unlocked.`;
+      } else {
+        return `Perfect! 100% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. The next lesson is now unlocked.`;
+      }
     } else {
-      html += `<span class="char-incorrect">${escapeHtml(expectedChar)}</span>`;
+      if (tone === "child") {
+        return `${who}, you got ${roundedAcc}% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. That’s good, but try the lesson again to reach 100% and unlock the next one.`;
+      } else if (tone === "teen") {
+        return `${who}, you scored ${roundedAcc}% on “${lessonTitle}” with ${roundedWpm} WPM. One more try to hit 100% will unlock the next lesson.`;
+      } else if (tone === "adult") {
+        return `${who}, you achieved ${roundedAcc}% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. Repeat the lesson until you hit 100% to unlock further progress.`;
+      } else {
+        return `You reached ${roundedAcc}% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. Repeat this lesson until you reach 100% to unlock the next one.`;
+      }
     }
   }
 
-  return html;
-}
-
-function calculateStats(typed, target, start, now) {
-  const totalTyped = typed.length;
-  let correctCount = 0;
-
-  for (let i = 0; i < totalTyped; i++) {
-    if (typed[i] === target[i]) {
-      correctCount++;
-    }
-  }
-
-  const accuracy = totalTyped ? (correctCount / totalTyped) * 100 : 0;
-
-  let timeSeconds = 0;
-  let wpm = 0;
-
-  if (start) {
-    timeSeconds = (now - start) / 1000;
-    const timeMinutes = timeSeconds / 60;
-    if (timeMinutes > 0) {
-      wpm = (totalTyped / 5) / timeMinutes; // standard WPM
-    }
-  }
-
-  return { accuracy, wpm, timeSeconds };
-}
-
-function escapeHtml(char) {
-  if (char === "<") return "&lt;";
-  if (char === ">") return "&gt;";
-  if (char === "&") return "&amp;";
-  return char;
-}
-
-// -------- Completion & progression --------------------------------------
-function handleLessonCompletion() {
-  const lesson = lessons[currentLessonId];
-  const lessonIndex = lessonOrder.indexOf(currentLessonId);
-  const nextLessonId = lessonOrder[lessonIndex + 1] || null;
-
-  const message = buildPersonalisedFeedback(
-    profile.name,
-    profile.age,
-    lastAccuracy,
-    lastWpm,
-    lesson.title,
-    !!nextLessonId
-  );
-
-  completionMessageEl.textContent = message;
-
-  // Unlock next lesson only if 100% accuracy
-  if (lastAccuracy >= 99.9 && nextLessonId) {
-    if (!progress.unlockedLessonIds.includes(nextLessonId)) {
-      progress.unlockedLessonIds.push(nextLessonId);
-      saveProgress();
+  // -------- Event listeners --------------------------------------------
+  lessonSelect.addEventListener("change", function () {
+    const selectedId = lessonSelect.value;
+    if (!progress.unlockedLessonIds.includes(selectedId)) {
       renderLessonOptions();
+      return;
     }
-  }
-}
+    loadLesson(selectedId);
+  });
 
-function buildPersonalisedFeedback(name, age, accuracy, wpm, lessonTitle, hasNext) {
-  const roundedAcc = accuracy.toFixed(1);
-  const roundedWpm = isFinite(wpm) ? wpm.toFixed(1) : "0";
+  startBtn.addEventListener("click", function () {
+    startLesson();
+  });
 
-  // Age groups
-  const ageNum = typeof age === "number" ? age : null;
-  let tone = "neutral";
+  typingInput.addEventListener("input", function () {
+    if (finished) return;
+    updateStatsAndFeedback();
+  });
 
-  if (ageNum != null) {
-    if (ageNum <= 12) tone = "child";
-    else if (ageNum <= 17) tone = "teen";
-    else tone = "adult";
-  }
+  saveProfileBtn.addEventListener("click", function () {
+    const name = learnerNameInput.value.trim();
+    const ageStr = learnerAgeInput.value.trim();
+    let ageNum = null;
 
-  const who = name ? name : "You";
-
-  if (accuracy >= 99.9) {
-    // Perfect run
-    if (tone === "child") {
-      return `${who}, that was amazing! You finished “${lessonTitle}” with 100% accuracy and ${roundedWpm} WPM. You can move on to the next lesson now.`;
-    } else if (tone === "teen") {
-      return `Nice work, ${who}. 100% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. You’re ready for the next challenge.`;
-    } else if (tone === "adult") {
-      return `Excellent, ${who}. 100% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. Your touch-typing foundations are solid – the next lesson is unlocked.`;
-    } else {
-      return `Perfect! 100% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. The next lesson is now unlocked.`;
+    if (ageStr) {
+      const parsed = parseInt(ageStr, 10);
+      if (!isNaN(parsed) && parsed >= 5 && parsed <= 120) {
+        ageNum = parsed;
+      }
     }
-  } else {
-    // Not perfect – encourage them to repeat
-    if (tone === "child") {
-      return `${who}, you got ${roundedAcc}% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. That’s good, but try the lesson again to reach 100% and unlock the next one.`;
-    } else if (tone === "teen") {
-      return `${who}, you scored ${roundedAcc}% on “${lessonTitle}” with ${roundedWpm} WPM. One more try to hit 100% will unlock the next lesson.`;
-    } else if (tone === "adult") {
-      return `${who}, you achieved ${roundedAcc}% accuracy on “${lessonTitle}” and ${roundedWpm} WPM. Repeat the lesson until you hit 100% to unlock further progress.`;
-    } else {
-      return `You reached ${roundedAcc}% accuracy on “${lessonTitle}” with ${roundedWpm} WPM. Repeat this lesson until you reach 100% to unlock the next one.`;
-    }
-  }
-}
 
-// -------- Event listeners ----------------------------------------------
-lessonSelect.addEventListener("change", () => {
-  const selectedId = lessonSelect.value;
-  // Prevent selecting locked lessons manually
-  if (!progress.unlockedLessonIds.includes(selectedId)) {
-    renderLessonOptions(); // reset selection
-    return;
-  }
-  loadLesson(selectedId);
-});
+    profile.name = name || "";
+    profile.age = ageNum;
 
-startBtn.addEventListener("click", () => {
-  startLesson();
-});
+    saveProfile();
+    renderProfileSummary();
+  });
 
-typingInput.addEventListener("input", () => {
-  if (finished) return;
-  updateStatsAndFeedback();
-});
-
-saveProfileBtn.addEventListener("click", () => {
-  const name = learnerNameInput.value.trim();
-  const ageStr = learnerAgeInput.value.trim();
-  let ageNum = null;
-
-  if (ageStr) {
-    const parsed = parseInt(ageStr, 10);
-    if (!isNaN(parsed) && parsed >= 5 && parsed <= 120) {
-      ageNum = parsed;
-    }
-  }
-
-  profile.name = name || "";
-  profile.age = ageNum;
-
-  saveProfile();
+  // -------- Initial setup ----------------------------------------------
+  loadProgress();
+  loadProfile();
   renderProfileSummary();
+  renderLessonOptions();
+  loadLesson(currentLessonId);
+  liveFeedbackEl.innerHTML = renderFeedback("", targetText);
 });
-
-// -------- Initial setup -------------------------------------------------
-loadProgress();
-loadProfile();
-renderProfileSummary();
-renderLessonOptions();
-loadLesson(currentLessonId);
-liveFeedbackEl.innerHTML = renderFeedback("", targetText);
