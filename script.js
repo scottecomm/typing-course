@@ -765,6 +765,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const saveProfileBtn = document.getElementById("save-profile-btn");
   const profileSummaryEl = document.getElementById("profile-summary");
 
+    // Start menu + reset
+  const startCourseBtn = document.getElementById("btn-start-course");
+  const continueCourseBtn = document.getElementById("btn-continue-course");
+  const resetProgressBtn = document.getElementById("reset-progress-btn");
+
   if (!lessonSelect || !startBtn || !lessonTitleEl || !targetTextEl || !typingInput) {
     console.warn("Typing trainer: required elements not found in DOM.");
     return;
@@ -1116,7 +1121,54 @@ document.addEventListener("DOMContentLoaded", function () {
     saveProfile();
     renderProfileSummary();
   });
+  // Start menu buttons
+  if (startCourseBtn) {
+    startCourseBtn.addEventListener("click", function () {
+      // Go to Lesson 1 and start it
+      currentLessonId = lessonOrder[0];
 
+      // Ensure at least Lesson 1 is unlocked
+      if (!progress.unlockedLessonIds.includes(currentLessonId)) {
+        progress.unlockedLessonIds = [currentLessonId];
+        saveProgress();
+      }
+
+      renderLessonOptions();
+      loadLesson(currentLessonId);
+      startLesson();
+    });
+  }
+
+  if (continueCourseBtn) {
+    continueCourseBtn.addEventListener("click", function () {
+      // Pick the last unlocked lesson and start it
+      const lastUnlocked =
+        progress.unlockedLessonIds[progress.unlockedLessonIds.length - 1] ||
+        lessonOrder[0];
+
+      currentLessonId = lastUnlocked;
+      renderLessonOptions();
+      loadLesson(currentLessonId);
+      startLesson();
+    });
+  }
+
+  if (resetProgressBtn) {
+    resetProgressBtn.addEventListener("click", function () {
+      const ok = window.confirm(
+        "Reset all progress and start again from Lesson 1?"
+      );
+      if (!ok) return;
+
+      progress = { unlockedLessonIds: [lessonOrder[0]] };
+      saveProgress();
+      currentLessonId = lessonOrder[0];
+      renderLessonOptions();
+      loadLesson(currentLessonId);
+      completionMessageEl.textContent =
+        "Progress reset. Start again from Lesson 1 when you’re ready.";
+    });
+  }
   // -------- Initial setup ----------------------------------------------
   loadProgress();
   loadProfile();
