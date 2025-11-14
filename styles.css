@@ -86,25 +86,6 @@ body {
   color: #66ffb2;
 }
 
-/* Start menu */
-.start-menu {
-  margin-bottom: 14px;
-  border-bottom: 1px dashed #00ff66;
-  padding-bottom: 10px;
-}
-
-.start-menu-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-
-.start-menu-note {
-  font-size: 0.85rem;
-  color: #66ffb2;
-}
-
 /* Controls */
 .controls {
   margin-bottom: 16px;
@@ -146,15 +127,6 @@ button {
 
 button:hover {
   background-color: #66ffb2;
-}
-
-.danger-btn {
-  background-color: #ff3366;
-  color: #000;
-}
-
-.danger-btn:hover {
-  background-color: #ff668c;
 }
 
 .hint {
@@ -289,88 +261,6 @@ textarea#typing-input:disabled {
   min-height: 2.2em;
 }
 
-/* Keyboard / hand position guide */
-.keyboard-panel {
-  margin-bottom: 16px;
-  border-bottom: 1px dashed #00ff66;
-  padding-bottom: 10px;
-  display: none; /* hidden by default, toggled via JS */
-}
-
-.keyboard-diagram {
-  border: 1px solid #00ff66;
-  padding: 10px;
-  margin-bottom: 8px;
-}
-
-.keyboard-row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 4px;
-}
-
-.key {
-  min-width: 28px;
-  padding: 4px 6px;
-  margin: 2px;
-  text-align: center;
-  border: 1px solid #00ff66;
-  font-size: 0.8rem;
-}
-
-.space-row {
-  justify-content: center;
-}
-
-.space-key {
-  min-width: 200px;
-}
-
-/* Finger colours */
-.left-pinky {
-  background-color: rgba(255, 105, 180, 0.25);
-}
-
-.left-ring {
-  background-color: rgba(255, 165, 0, 0.25);
-}
-
-.left-middle {
-  background-color: rgba(255, 255, 0, 0.25);
-}
-
-.left-index {
-  background-color: rgba(144, 238, 144, 0.25);
-}
-
-.right-index {
-  background-color: rgba(173, 216, 230, 0.25);
-}
-
-.right-middle {
-  background-color: rgba(135, 206, 250, 0.25);
-}
-
-.right-ring {
-  background-color: rgba(216, 191, 216, 0.25);
-}
-
-.right-pinky {
-  background-color: rgba(255, 160, 122, 0.25);
-}
-
-.finger-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  font-size: 0.75rem;
-}
-
-.legend-item {
-  border: 1px solid #00ff66;
-  padding: 2px 4px;
-}
-
 /* Footer */
 .app-footer {
   border-top: 1px dashed #00ff66;
@@ -404,22 +294,8 @@ textarea#typing-input:disabled {
     align-items: flex-start;
   }
 
-  .control-row,
-  .start-menu-row {
+  .control-row {
     flex-direction: column;
     align-items: flex-start;
-  }
-
-  .keyboard-diagram {
-    padding: 6px;
-  }
-
-  .key {
-    min-width: 24px;
-    margin: 1px;
-  }
-
-  .space-key {
-    min-width: 140px;
   }
 }
