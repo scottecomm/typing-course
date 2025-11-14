@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Touch & Go Typing Trainer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Touch &amp; Go Typing Trainer</h1>
+      <p class="tagline">Retro-style touch typing practice in your browser.</p>
+    </header>
+
+    <section class="controls">
+      <div class="control-row">
+        <label for="lesson-select">Lesson:</label>
+        <select id="lesson-select">
+          <option value="home-row">Home Row – asdf jkl;</option>
+          <option value="home-row-words">Home Row – simple words</option>
+          <!-- You can add more lessons later -->
+        </select>
+        <button id="start-btn">Start lesson</button>
+      </div>
+      <p class="hint">
+        Press <span class="key-cap">Start lesson</span>, then begin typing in the box below.
+      </p>
+    </section>
+
+    <section class="lesson-panel">
+      <h2 id="lesson-title">Home Row – asdf jkl;</h2>
+      <div id="target-text" class="target-text">
+        <!-- Filled by JavaScript -->
+      </div>
+    </section>
+
+    <section class="typing-panel">
+      <label for="typing-input" class="typing-label">Type here:</label>
+      <textarea
+        id="typing-input"
+        rows="3"
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        disabled
+        placeholder="Click &quot;Start lesson&quot; to begin..."
+      ></textarea>
+    </section>
+
+    <section class="feedback-panel">
+      <h3>Live feedback</h3>
+      <div id="live-feedback" class="live-feedback">
+        <!-- Coloured feedback appears here -->
+      </div>
+    </section>
+
+    <section class="stats-panel">
+      <h3>Stats</h3>
+      <div class="stats-grid">
+        <div class="stat">
+          <span class="stat-label">Accuracy</span>
+          <span id="stat-accuracy" class="stat-value">0%</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">WPM</span>
+          <span id="stat-wpm" class="stat-value">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Time</span>
+          <span id="stat-time" class="stat-value">0s</span>
+        </div>
+      </div>
+      <p id="completion-message" class="completion-message"></p>
+    </section>
+
+    <footer class="app-footer">
+      <p>
+        Tip: Try not to look at your hands. Keep your fingers on the
+        <span class="key-cap">A S D F</span> and
+        <span class="key-cap">J K L ;</span> keys.
+      </p>
+      <p class="small-print">
+        Inspired by classic touch typing tutors – rebuilt for the browser.
+      </p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
